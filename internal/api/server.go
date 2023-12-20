@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const password = "Golang"
+const token = "Golang"
 
 func StartServer() {
 	log.Println("Server start up")
@@ -30,10 +30,16 @@ func StartServer() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+
+		if data.Token != token {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "нет доступа"})
+			return
+		}
+
 		requestID := data.Request_id
 
 		// Запуск горутины для отправки статуса
-		go sendStatus(requestID, password, fmt.Sprintf("http://localhost:8000/request/%d/status/", requestID))
+		go sendStatus(requestID, token, fmt.Sprintf("http://localhost:8000/request/%d/status/", requestID))
 
 		c.JSON(http.StatusOK, gin.H{"message": "Status update initiated"})
 	})
@@ -42,19 +48,19 @@ func StartServer() {
 	log.Println("Server down")
 }
 
-func genRandomStatus(password string) Result {
+func genRandomStatus(token string) Result {
 	time.Sleep(8 * time.Second)
 	status := "W"
 	if rand.Intn(100) < 50 {
 		status = "F"
 	}
-	return Result{status, password}
+	return Result{status, token}
 }
 
 // Функция для отправки статуса в отдельной горутине
-func sendStatus(requestID int, password string, url string) {
+func sendStatus(requestID int, token string, url string) {
 	// Выполнение расчётов с randomStatus
-	result := genRandomStatus(password)
+	result := genRandomStatus(token)
 
 	// Отправка PUT-запроса к основному серверу
 	_, err := performPUTRequest(url, result)
@@ -67,12 +73,13 @@ func sendStatus(requestID int, password string, url string) {
 }
 
 type Result struct {
-	Status   string `json:"status"`
-	Password string `json:"password"`
+	Status string `json:"status"`
+	Token  string `json:"token"`
 }
 
 type EventData struct {
-	Request_id int `json:"Request_id"`
+	Request_id int    `json:"Request_id"`
+	Token      string `json:"token"`
 }
 
 func performPUTRequest(url string, data Result) (*http.Response, error) {

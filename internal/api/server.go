@@ -39,9 +39,9 @@ func StartServer() {
 		requestID := data.Request_id
 
 		// Запуск горутины для отправки статуса
-		go sendStatus(requestID, token, fmt.Sprintf("http://localhost:8000/request/%d/status/", requestID))
+		go sendStatus(requestID, token, fmt.Sprintf("http://localhost:8000/request/%d/result/", requestID))
 
-		c.JSON(http.StatusOK, gin.H{"message": "Status update initiated"})
+		c.JSON(http.StatusOK, gin.H{"message": "Result update initiated"})
 	})
 	router.Run(":8080")
 
@@ -50,11 +50,11 @@ func StartServer() {
 
 func genRandomStatus(token string) Result {
 	time.Sleep(8 * time.Second)
-	status := "W"
+	result := "W"
 	if rand.Intn(100) < 50 {
-		status = "F"
+		result = "F"
 	}
-	return Result{status, token}
+	return Result{result, token}
 }
 
 // Функция для отправки статуса в отдельной горутине
@@ -65,15 +65,15 @@ func sendStatus(requestID int, token string, url string) {
 	// Отправка PUT-запроса к основному серверу
 	_, err := performPUTRequest(url, result)
 	if err != nil {
-		fmt.Println("Error sending status:", err)
+		fmt.Println("Error sending result:", err)
 		return
 	}
 
-	fmt.Println("Status sent successfully for RequestID:", requestID)
+	fmt.Println("Result sent successfully for RequestID:", requestID)
 }
 
 type Result struct {
-	Status string `json:"status"`
+	Result string `json:"result"`
 	Token  string `json:"token"`
 }
 
